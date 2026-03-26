@@ -74,13 +74,15 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.VH> {
     }
 
     public static int getWeatherIconRes(int code) {
-        if (code == 0) return android.R.drawable.ic_menu_day;
-        if (code == 1 || code == 2 || code == 3) return android.R.drawable.ic_menu_compass;
+        if (code == 0) return R.drawable.ic_weather_sun;
+        if (code == 1 || code == 2 || code == 3) return R.drawable.ic_weather_cloud;
+        if (code == 45 || code == 48) return R.drawable.ic_weather_fog;
+        if (code == 51 || code == 53 || code == 55) return R.drawable.ic_weather_rain;
         if (code == 61 || code == 63 || code == 65 || code == 80 || code == 81 || code == 82) {
-            return android.R.drawable.ic_menu_upload;
+            return R.drawable.ic_weather_rain;
         }
-        if (code == 71 || code == 73 || code == 75) return android.R.drawable.ic_menu_gallery;
-        if (code == 95 || code == 96 || code == 99) return android.R.drawable.ic_dialog_alert;
-        return android.R.drawable.ic_menu_help;
+        if (code == 71 || code == 73 || code == 75) return R.drawable.ic_weather_snow;
+        if (code == 95 || code == 96 || code == 99) return R.drawable.ic_weather_thunder;
+        return R.drawable.ic_weather_cloud;
     }
 }

@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.Switch;
@@ -37,6 +38,7 @@ public class WeatherActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView tvLoading, tvError;
     private TextView tvCityName, tvCurrentDesc, tvCurrentTemp, tvFeelsLike, tvWind;
+    private ImageView ivCurrentIcon;
     private TextView tvForecastTitle;
     private RecyclerView rvForecast;
 
@@ -68,6 +70,7 @@ public class WeatherActivity extends AppCompatActivity {
         tvCurrentTemp = findViewById(R.id.tvCurrentTemp);
         tvFeelsLike = findViewById(R.id.tvFeelsLike);
         tvWind = findViewById(R.id.tvWind);
+        ivCurrentIcon = findViewById(R.id.ivCurrentIcon);
         tvForecastTitle = findViewById(R.id.tvForecastTitle);
 
         // Setup RecyclerView
@@ -115,7 +118,20 @@ public class WeatherActivity extends AppCompatActivity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     setLoading(false);
-                    tvError.setText("Network error");
+                    String msg = e.getMessage() == null ? "" : e.getMessage();
+                    if (msg.toLowerCase(Locale.US).contains("no location")) {
+                        tvError.setText("City not found. Try a different name.");
+                    } else if (msg.toLowerCase(Locale.US).contains("http")) {
+                        tvError.setText("Service error. Please try again.");
+                    } else {
+                        tvError.setText("Network error. Please try again.");
+                    }
+                    tvCityName.setText("City");
+                    tvCurrentDesc.setText("Weather Description");
+                    tvCurrentTemp.setText("Temp");
+                    tvFeelsLike.setText("Feels like");
+                    tvWind.setText("Wind");
+                    setForecastVisible(false);
                 });
             }
         });
@@ -132,6 +148,7 @@ public class WeatherActivity extends AppCompatActivity {
         tvCurrentTemp.setText("Temp: " + result.getCurrentTemp() + unit);
         tvFeelsLike.setText("Feels: " + result.getApparentTemp() + unit);
         tvWind.setText("Wind: " + result.getWindSpeed());
+        ivCurrentIcon.setImageResource(ForecastAdapter.getWeatherIconRes(result.getCurrentWeatherCode()));
 
         // Update RecyclerView
         if (showForecast) {
@@ -139,6 +156,12 @@ public class WeatherActivity extends AppCompatActivity {
         } else {
             rvForecast.setAdapter(new ForecastAdapter(new ArrayList<>(), isFahrenheit));
         }
+        setForecastVisible(showForecast);
+    }
+
+    private void setForecastVisible(boolean visible) {
+        tvForecastTitle.setVisibility(visible ? TextView.VISIBLE : TextView.GONE);
+        rvForecast.setVisibility(visible ? RecyclerView.VISIBLE : RecyclerView.GONE);
     }
 
     /**
@@ -184,7 +207,13 @@ public class WeatherActivity extends AppCompatActivity {
         String response = httpGet(url);
 
         JSONObject obj = new JSONObject(response);
+        if (!obj.has("results")) {
+            throw new Exception("No location results");
+        }
         JSONArray arr = obj.getJSONArray("results");
+        if (arr.length() == 0) {
+            throw new Exception("No location results");
+        }
         JSONObject first = arr.getJSONObject(0);
 
         return new LocationData(
@@ -259,6 +288,13 @@ public class WeatherActivity extends AppCompatActivity {
     private String httpGet(String urlStr) throws Exception {
         URL url = new URL(urlStr);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(8000);
+
+        int code = conn.getResponseCode();
+        if (code < 200 || code >= 300) {
+            throw new Exception("HTTP " + code);
+        }
 
         BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
         StringBuilder sb = new StringBuilder();

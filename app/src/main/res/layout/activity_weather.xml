@@ -92,6 +92,14 @@
         android:background="#E8F2FF"
         android:layout_marginTop="16dp">
 
+        <ImageView
+            android:id="@+id/ivCurrentIcon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="end"
+            android:contentDescription="current weather icon"
+            android:src="@drawable/ic_weather_cloud" />
+
         <TextView
             android:id="@+id/tvCityName"
             android:layout_width="wrap_content"
