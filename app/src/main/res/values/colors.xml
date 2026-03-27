@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="main_screen_background">#FFF5F9FF</color>
+    <color name="weather_card_background">#E8F2FF</color>
+    <color name="error_text">#B00020</color>
 </resources>
