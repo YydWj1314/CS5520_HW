@@ -22,6 +22,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -76,6 +78,7 @@ public class WeatherActivity extends AppCompatActivity {
         // Setup RecyclerView
         rvForecast = findViewById(R.id.rvForecast);
         rvForecast.setLayoutManager(new LinearLayoutManager(this));
+        rvForecast.setNestedScrollingEnabled(false);
 
         // Button click triggers weather search
         btnSearch.setOnClickListener(v -> searchWeather());
@@ -91,7 +94,7 @@ public class WeatherActivity extends AppCompatActivity {
         String city = etCity.getText().toString().trim();
 
         if (city.isEmpty()) {
-            tvError.setText("Please enter a city name.");
+            tvError.setText(R.string.err_enter_city);
             return;
         }
 
@@ -120,17 +123,17 @@ public class WeatherActivity extends AppCompatActivity {
                     setLoading(false);
                     String msg = e.getMessage() == null ? "" : e.getMessage();
                     if (msg.toLowerCase(Locale.US).contains("no location")) {
-                        tvError.setText("City not found. Try a different name.");
+                        tvError.setText(R.string.err_city_not_found);
                     } else if (msg.toLowerCase(Locale.US).contains("http")) {
-                        tvError.setText("Service error. Please try again.");
+                        tvError.setText(R.string.err_service);
                     } else {
-                        tvError.setText("Network error. Please try again.");
+                        tvError.setText(R.string.err_network);
                     }
-                    tvCityName.setText("City");
-                    tvCurrentDesc.setText("Weather Description");
-                    tvCurrentTemp.setText("Temp");
-                    tvFeelsLike.setText("Feels like");
-                    tvWind.setText("Wind");
+                    tvCityName.setText(R.string.placeholder_city);
+                    tvCurrentDesc.setText(R.string.placeholder_weather_desc);
+                    tvCurrentTemp.setText(R.string.placeholder_temp);
+                    tvFeelsLike.setText(R.string.placeholder_feels);
+                    tvWind.setText(R.string.placeholder_wind);
                     setForecastVisible(false);
                 });
             }
@@ -144,11 +147,13 @@ public class WeatherActivity extends AppCompatActivity {
         String unit = isFahrenheit ? "°F" : "°C";
 
         tvCityName.setText(result.getCityDisplayName());
-        tvCurrentDesc.setText(ForecastAdapter.getWeatherDescription(result.getCurrentWeatherCode()));
+        int code = result.getCurrentWeatherCode();
+        tvCurrentDesc.setText(ForecastAdapter.getWeatherDescription(code));
         tvCurrentTemp.setText("Temp: " + result.getCurrentTemp() + unit);
         tvFeelsLike.setText("Feels: " + result.getApparentTemp() + unit);
         tvWind.setText("Wind: " + result.getWindSpeed());
-        ivCurrentIcon.setImageResource(ForecastAdapter.getWeatherIconRes(result.getCurrentWeatherCode()));
+        ivCurrentIcon.setImageResource(ForecastAdapter.getWeatherIconRes(code));
+        ivCurrentIcon.setContentDescription(ForecastAdapter.getWeatherDescription(code));
 
         // Update RecyclerView
         if (showForecast) {
@@ -178,8 +183,15 @@ public class WeatherActivity extends AppCompatActivity {
             loadingHandler.post(loadingRunnable);
         } else {
             loadingHandler.removeCallbacks(loadingRunnable);
-            tvLoading.setText("Loading");
+            tvLoading.setText(R.string.loading);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        loadingHandler.removeCallbacks(loadingRunnable);
+        executor.shutdown();
+        super.onDestroy();
     }
 
     /**
@@ -191,7 +203,7 @@ public class WeatherActivity extends AppCompatActivity {
             if (!loadingActive) return;
 
             loadingDots = (loadingDots + 1) % 4;
-            StringBuilder sb = new StringBuilder("Loading");
+            StringBuilder sb = new StringBuilder(getString(R.string.loading));
             for (int i = 0; i < loadingDots; i++) sb.append(".");
             tvLoading.setText(sb.toString());
 
@@ -203,7 +215,8 @@ public class WeatherActivity extends AppCompatActivity {
      * Call geocoding API → convert city name to coordinates
      */
     private LocationData fetchLocation(String city) throws Exception {
-        String url = "https://geocoding-api.open-meteo.com/v1/search?name=" + city;
+        String encoded = URLEncoder.encode(city, StandardCharsets.UTF_8.name());
+        String url = "https://geocoding-api.open-meteo.com/v1/search?name=" + encoded;
         String response = httpGet(url);
 
         JSONObject obj = new JSONObject(response);
@@ -286,23 +299,32 @@ public class WeatherActivity extends AppCompatActivity {
      * Generic HTTP GET request
      */
     private String httpGet(String urlStr) throws Exception {
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(8000);
-        conn.setReadTimeout(8000);
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(urlStr);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
 
-        int code = conn.getResponseCode();
-        if (code < 200 || code >= 300) {
-            throw new Exception("HTTP " + code);
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) {
+                throw new Exception("HTTP " + code);
+            }
+
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                }
+                return sb.toString();
+            }
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        StringBuilder sb = new StringBuilder();
-
-        String line;
-        while ((line = br.readLine()) != null) sb.append(line);
-
-        return sb.toString();
     }
 
     /**
