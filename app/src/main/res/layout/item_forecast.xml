@@ -11,7 +11,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginEnd="12dp"
-        android:contentDescription="weather icon" />
+        android:contentDescription="@string/content_desc_forecast_icon" />
 
     <LinearLayout
         android:layout_width="0dp"

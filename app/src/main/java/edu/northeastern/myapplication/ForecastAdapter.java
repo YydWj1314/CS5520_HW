@@ -38,8 +38,10 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.VH> {
         h.tvTemp.setText(String.format(Locale.US, "%.1f° / %.1f°",
                 f.getMaxTemp(), f.getMinTemp()));
         h.tvRain.setText(String.format(Locale.US, "Rain: %.0f%%", f.getRainProbability()));
-        h.tvDesc.setText(getWeatherDescription(f.getWeatherCode()));
+        String desc = getWeatherDescription(f.getWeatherCode());
+        h.tvDesc.setText(desc);
         h.ivIcon.setImageResource(getWeatherIconRes(f.getWeatherCode()));
+        h.ivIcon.setContentDescription(desc);
     }
 
     @Override
