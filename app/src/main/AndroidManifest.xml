@@ -5,13 +5,14 @@
 
     <application
         android:allowBackup="true"
-        android:label="Weather Explorer"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
 
         <activity
             android:name=".WeatherActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".MainActivity"
